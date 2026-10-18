@@ -220,18 +220,20 @@ curl -X POST http://localhost:3000/summarize/<analysisId>
 APK Inspector uses **Prisma ORM** with **PostgreSQL**. It supports a resilient dual-mode architecture: if a PostgreSQL database is connected, reports are indexed and persisted in PostgreSQL; if no database is configured, it automatically falls back to local disk storage (`reports/`).
 
 ### Local Development (Docker Compose)
-1. Start the PostgreSQL container:
+1. **Configurable Port Binding**: The local PostgreSQL host port is configurable via `POSTGRES_PORT` (defaulting to `5438` to avoid conflicting with ports `5432-5435` from other local services).
+2. Start the PostgreSQL container:
    ```bash
    docker compose up -d postgres
    ```
-   *(Runs PostgreSQL 16 on port `5435` with volume persistence)*.
+   *(Runs PostgreSQL 16 on port `5438` by default with volume persistence)*.
 
-2. Set the connection string in your `.env`:
+3. Set the connection string in your `.env`:
    ```env
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5435/apk_inspector?schema=public"
+   POSTGRES_PORT=5438
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5438/apk_inspector?schema=public"
    ```
 
-3. Push the schema to your local database:
+4. Push the schema to your local database:
    ```bash
    npx prisma db push
    ```
@@ -272,12 +274,19 @@ docker compose up -d --build
 ```
 
 This starts:
-- `apk-inspector`: NestJS + Python engine on port `3001`
-- `postgres`: PostgreSQL 16 on port `5435`
+- `apk-inspector`: NestJS + Python engine on port `${PORT:-3001}`
+- `postgres`: PostgreSQL 16 on port `${POSTGRES_PORT:-5438}`
+
+---
+
+## 📜 Changelog
+
+Detailed release notes and version history are maintained in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
 ## 📄 Resume Integration Guide
 
 For detailed explanations of the underlying Android internals, Dalvik bytecode, native C/C++ concepts, and interview talking points, refer to [RESUME_GUIDE.md](RESUME_GUIDE.md).
+
 
