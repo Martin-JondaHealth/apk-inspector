@@ -1,0 +1,35 @@
+# Node & Build artifacts
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Python Virtual Environments & Cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Uploads & Reports runtime artifacts
+uploads/*
+!uploads/.gitkeep
+reports/*
+!reports/.gitkeep
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# OS & Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Sample test APK generated at runtime
+sample-test.apk
