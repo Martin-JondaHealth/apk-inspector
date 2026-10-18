@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: apk-inspector
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_MAX_TOKENS
+        value: 8192
+      - key: GEMINI_THINKING_BUDGET
+        value: 0
+      - key: GEMINI_API_KEY
+        sync: false

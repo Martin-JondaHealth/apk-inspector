@@ -1,17 +1,23 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as path from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
+
+  // Serve modern single-page dashboard and sample APK assets
+  app.useStaticAssets(path.join(process.cwd(), 'public'));
+  app.useStaticAssets(path.join(process.cwd(), 'sample_apks'), { prefix: '/sample_apks' });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -52,8 +58,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  logger.log(`🚀 APK Inspector API is running on http://localhost:${port}`);
-  logger.log(`📚 Interactive Swagger API Docs available at http://localhost:${port}/api/docs`);
+  logger.log(`🚀 APK Inspector Web Dashboard: http://localhost:${port}`);
+  logger.log(`📚 Interactive Swagger API Docs: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

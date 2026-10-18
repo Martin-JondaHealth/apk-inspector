@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APK Inspector — Android Static Analysis & Security Audit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Markdown parser for AI summaries -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0a0f1d;
+      --bg-card: rgba(17, 24, 39, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --cyan: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --sev-critical: #ef4444;
+      --sev-high: #f97316;
+      --sev-medium: #f59e0b;
+      --sev-low: #3b82f6;
+      --sev-info: #64748b;
+      --grade-a: #10b981;
+      --grade-b: #3b82f6;
+      --grade-c: #f59e0b;
+      --grade-d: #f97316;
+      --grade-f: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.10) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    /* Navbar */
+    header {
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(10, 15, 29, 0.85);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.025em;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 3.5rem 0 2rem;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--primary-light);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      margin-bottom: 1rem;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.125rem;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Upload Zone */
+    .upload-card {
+      background: var(--bg-card);
+      border: 2px dashed rgba(99, 102, 241, 0.35);
+      border-radius: 20px;
+      padding: 3.5rem 2rem;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      transition: all 0.25s ease;
+      cursor: pointer;
+      position: relative;
+      margin-bottom: 2.5rem;
+    }
+
+    .upload-card:hover, .upload-card.dragover {
+      border-color: var(--primary);
+      background: rgba(30, 41, 59, 0.9);
+      box-shadow: 0 0 30px var(--primary-glow);
+      transform: translateY(-2px);
+    }
+
+    .upload-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.25rem;
+      background: rgba(99, 102, 241, 0.15);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-light);
+    }
+
+    .upload-card h3 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-card p {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.75rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      color: white;
+      box-shadow: 0 4px 15px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .quick-sample-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .sample-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.25rem 0.65rem;
+      color: var(--primary-light);
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+
+    .sample-pill:hover {
+      background: var(--primary-glow);
+      border-color: var(--primary-light);
+      color: #ffffff;
+    }
+
+    /* Progress Overlay */
+    .progress-box {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2.5rem;
+      text-align: center;
+      margin-bottom: 2.5rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1.25rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-step {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Results Dashboard */
+    .dashboard {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Executive Top Card */
+    .meta-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .meta-title-group h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+    }
+
+    .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .meta-tag {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+    }
+
+    .meta-tag strong {
+      color: var(--text-main);
+    }
+
+    .grade-badge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .grade-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 2rem;
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
+    }
+
+    .grade-A { border: 3px solid var(--grade-a); color: var(--grade-a); box-shadow: 0 0 25px rgba(16, 185, 129, 0.3); }
+    .grade-B { border: 3px solid var(--grade-b); color: var(--grade-b); box-shadow: 0 0 25px rgba(59, 130, 246, 0.3); }
+    .grade-C { border: 3px solid var(--grade-c); color: var(--grade-c); box-shadow: 0 0 25px rgba(245, 158, 11, 0.3); }
+    .grade-D { border: 3px solid var(--grade-d); color: var(--grade-d); box-shadow: 0 0 25px rgba(249, 115, 22, 0.3); }
+    .grade-F { border: 3px solid var(--sev-critical); color: var(--sev-critical); box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+
+    .grade-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: -4px;
+    }
+
+    .counts-grid {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .count-chip {
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      text-align: center;
+      min-width: 65px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+    }
+
+    .count-chip .num {
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .count-chip .lbl {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    /* AI Executive Card */
+    .ai-card {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.06));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .ai-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .ai-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .ai-model-tag {
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: var(--primary-light);
+    }
+
+    .ai-body {
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .ai-body h3, .ai-body h4 {
+      margin: 1.25rem 0 0.5rem;
+      color: #ffffff;
+    }
+
+    .ai-body ul, .ai-body ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .ai-body li {
+      margin-bottom: 0.35rem;
+    }
+
+    .ai-body code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.25rem;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--primary-light);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    /* Findings List */
+    .finding-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .finding-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .finding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+      gap: 1rem;
+    }
+
+    .finding-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: #ffffff;
+    }
+
+    .severity-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .sev-critical-badge { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--sev-critical); color: #fca5a5; }
+    .sev-high-badge { background: rgba(249, 115, 22, 0.2); border: 1px solid var(--sev-high); color: #fdba74; }
+    .sev-medium-badge { background: rgba(245, 158, 11, 0.2); border: 1px solid var(--sev-medium); color: #fde68a; }
+    .sev-low-badge { background: rgba(59, 130, 246, 0.2); border: 1px solid var(--sev-low); color: #93c5fd; }
+    .sev-info-badge { background: rgba(100, 116, 139, 0.2); border: 1px solid var(--sev-info); color: #cbd5e1; }
+
+    .finding-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .finding-evidence {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 0.6rem 0.9rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      margin-bottom: 0.75rem;
+      overflow-x: auto;
+    }
+
+    .finding-rec {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .finding-rec strong {
+      color: #38bdf8;
+    }
+
+    /* Tables & Grids */
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+
+    .grid-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .grid-card h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .pill {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      font-family: 'JetBrains Mono', monospace;
+      color: #e2e8f0;
+    }
+
+    .pill.dangerous {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    .pill.secret {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fde68a;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 2.5rem 0;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2rem; }
+      .meta-card { flex-direction: column; align-items: flex-start; }
+      .grade-badge-wrap { width: 100%; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header>
+    <div class="nav-inner">
+      <a href="/" class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        APK Inspector
+      </a>
+      <div class="nav-links">
+        <span class="badge-status">
+          <span class="badge-dot"></span>
+          Python Engine Ready
+        </span>
+        <a href="/api/docs" class="nav-link" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          Swagger Docs
+        </a>
+        <a href="https://github.com/Martin-JondaHealth/apk-inspector" class="nav-link" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-badge">OWASP MASVS Static Security Auditor</div>
+      <h1>Android APK Reverse Engineering</h1>
+      <p>Upload an Android APK to statically decompile the manifest, scan Dalvik bytecode for embedded secrets and dangerous APIs, enumerate native C/C++ libraries, and generate an AI executive risk briefing.</p>
+    </section>
+
+    <!-- Upload Card -->
+    <div class="upload-card" id="dropZone">
+      <input type="file" id="fileInput" accept=".apk" style="display: none;">
+      <div class="upload-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <h3>Drag & Drop your .apk package here</h3>
+      <p>Supports standalone Android APK files up to 100 MB</p>
+      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Select APK File</button>
+
+      <div class="quick-sample-row">
+        <span>Or test with a pre-configured sample:</span>
+        <span class="sample-pill" onclick="testWithSample('sample-test.apk')">sample-test.apk</span>
+        <span class="sample-pill" onclick="testWithSample('InsecureBankv2.apk')">InsecureBankv2.apk</span>
+        <span class="sample-pill" onclick="testWithSample('NewPipe.apk')">NewPipe.apk</span>
+      </div>
+    </div>
+
+    <!-- Progress State -->
+    <div class="progress-box" id="progressBox">
+      <div class="spinner"></div>
+      <h3 id="progressTitle">Analyzing APK Package...</h3>
+      <div class="progress-step" id="progressStep">Decompiling AndroidManifest.xml & bytecode...</div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard" id="dashboard">
+      <!-- Executive Meta Card -->
+      <div class="meta-card">
+        <div class="meta-title-group">
+          <h2 id="metaPackage">com.example.app</h2>
+          <div class="meta-tags">
+            <span class="meta-tag">Version: <strong id="metaVersion">1.0</strong></span>
+            <span class="meta-tag">Min SDK: <strong id="metaMinSdk">21</strong></span>
+            <span class="meta-tag">Target SDK: <strong id="metaTargetSdk">34</strong></span>
+            <span class="meta-tag">File: <strong id="metaFileName">app.apk</strong></span>
+            <span class="meta-tag">Size: <strong id="metaSize">0 KB</strong></span>
+          </div>
+        </div>
+
+        <div class="grade-badge-wrap">
+          <div class="grade-circle grade-C" id="gradeBadge">
+            <span id="gradeLetter">C</span>
+            <span class="grade-label">Grade</span>
+          </div>
+
+          <div class="counts-grid">
+            <div class="count-chip">
+              <div class="num" id="cntCrit" style="color: var(--sev-critical)">0</div>
+              <div class="lbl">Crit</div>
+            </div>
+            <div class="count-chip">
+              <div class="num" id="cntHigh" style="color: var(--sev-high)">0</div>
+              <div class="lbl">High</div>
+            </div>
+            <div class="count-chip">
+              <div class="num" id="cntMed" style="color: var(--sev-medium)">0</div>
+              <div class="lbl">Med</div>
+            </div>
+            <div class="count-chip">
+              <div class="num" id="cntLow" style="color: var(--sev-low)">0</div>
+              <div class="lbl">Low</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Executive Assessment Card -->
+      <div class="ai-card">
+        <div class="ai-header">
+          <div class="ai-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+              <path d="M12 2a10 10 0 0 1 10 10h-10V2z"/>
+              <path d="M12 12 2.1 12a10.1 10.1 0 0 0 9.9 10z"/>
+            </svg>
+            Executive AI Risk Assessment
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span class="ai-model-tag" id="aiModelTag">Gemini 2.5 Flash</span>
+            <button class="btn btn-outline" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" id="btnRegenAi" onclick="fetchAiSummary(true)">
+              🔄 Regenerate
+            </button>
+          </div>
+        </div>
+        <div class="ai-body" id="aiContent">
+          Loading AI executive security briefing...
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-findings', this)">
+          🛡️ OWASP MASVS Findings (<span id="tabCountFindings">0</span>)
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-manifest', this)">
+          📄 Manifest & Components
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-code', this)">
+          🔍 Bytecode Secrets & APIs
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-native', this)">
+          ⚙️ Native C/C++ (.so)
+        </button>
+      </div>
+
+      <!-- Tab 1: OWASP MASVS Findings -->
+      <div class="tab-pane active" id="tab-findings">
+        <div id="findingsList"></div>
+      </div>
+
+      <!-- Tab 2: Manifest & Components -->
+      <div class="tab-pane" id="tab-manifest">
+        <div class="data-grid">
+          <div class="grid-card">
+            <h4>Exported Activities</h4>
+            <div class="tag-cloud" id="manifestActivities"></div>
+          </div>
+          <div class="grid-card">
+            <h4>Exported Services</h4>
+            <div class="tag-cloud" id="manifestServices"></div>
+          </div>
+          <div class="grid-card">
+            <h4>Exported Receivers</h4>
+            <div class="tag-cloud" id="manifestReceivers"></div>
+          </div>
+          <div class="grid-card">
+            <h4>Exported Content Providers</h4>
+            <div class="tag-cloud" id="manifestProviders"></div>
+          </div>
+          <div class="grid-card" style="grid-column: 1 / -1;">
+            <h4>Declared Permissions</h4>
+            <div class="tag-cloud" id="manifestPermissions"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Bytecode Secrets & APIs -->
+      <div class="tab-pane" id="tab-code">
+        <div class="data-grid">
+          <div class="grid-card" style="grid-column: 1 / -1;">
+            <h4>Hardcoded Secrets & API Keys Detected</h4>
+            <div id="codeSecretsList"></div>
+          </div>
+          <div class="grid-card">
+            <h4>Dangerous API Calls</h4>
+            <div class="tag-cloud" id="codeDangerousApis"></div>
+          </div>
+          <div class="grid-card">
+            <h4>Embedded Trackers & SDKs</h4>
+            <div class="tag-cloud" id="codeTrackers"></div>
+          </div>
+          <div class="grid-card" style="grid-column: 1 / -1;">
+            <h4>Hardcoded URLs & Endpoints</h4>
+            <div class="tag-cloud" id="codeUrls"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Native Binaries (.so) -->
+      <div class="tab-pane" id="tab-native">
+        <div class="grid-card" style="margin-bottom: 1.5rem;">
+          <h4>Supported CPU ABIs</h4>
+          <div class="tag-cloud" id="nativeAbis"></div>
+        </div>
+        <div class="grid-card">
+          <h4>Bundled Shared Libraries (.so)</h4>
+          <div id="nativeLibsList"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p><strong>APK Inspector</strong> — Android Static Analysis & Reverse Engineering Service</p>
+      <p style="margin-top: 0.35rem;">Built by Martin (Nan Kyaw Thae Su) · Powered by NestJS, Python (<a href="https://github.com/androguard/androguard" target="_blank">Androguard</a>), and Google Gemini</p>
+    </div>
+  </footer>
+
+  <script>
+    let currentAnalysisId = null;
+
+    // Drag and drop setup
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].name.endsWith('.apk')) {
+        uploadApk(files[0]);
+      } else {
+        alert('Please drop a valid .apk file');
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        uploadApk(e.target.files[0]);
+      }
+    });
+
+    async function testWithSample(fileName) {
+      showProgress('Locating Sample APK...', 'Fetching sample file from server...');
+      try {
+        const res = await fetch('/reports');
+        const list = await res.json();
+        // If already analyzed recently, load directly
+        const existing = list.find(r => r.fileName.includes(fileName));
+        if (existing) {
+          loadReport(existing.analysisId);
+          return;
+        }
+      } catch {}
+
+      // If not cached yet, fetch the sample and upload
+      try {
+        const apkUrl = fileName.includes('sample-test') ? '/sample-test.apk' : `/sample_apks/${fileName}`;
+        const blobRes = await fetch(apkUrl);
+        if (!blobRes.ok) throw new Error('Sample APK file not found on server');
+        const blob = await blobRes.blob();
+        const file = new File([blob], fileName, { type: 'application/vnd.android.package-archive' });
+        uploadApk(file);
+      } catch (err) {
+        hideProgress();
+        alert(`Could not load sample APK: ${err.message}. Please upload via file picker.`);
+      }
+    }
+
+    async function uploadApk(file) {
+      showProgress('Uploading & Decompiling APK...', 'Executing Androguard static analysis pipeline...');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/analyze', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Analysis failed');
+        }
+
+        const data = await res.json();
+        currentAnalysisId = data.analysisId;
+        await loadReport(currentAnalysisId);
+      } catch (err) {
+        hideProgress();
+        alert('Analysis Error: ' + err.message);
+      }
+    }
+
+    async function loadReport(analysisId) {
+      currentAnalysisId = analysisId;
+      showProgress('Rendering Security Report...', 'Formatting findings and scoring MASVS compliance...');
+
+      try {
+        const [repRes, sumRes] = await Promise.all([
+          fetch(`/report/${analysisId}`),
+          fetch(`/report/${analysisId}/summary`),
+        ]);
+
+        const report = await repRes.json();
+        const summary = await sumRes.json();
+
+        renderDashboard(report, summary);
+        hideProgress();
+
+        // Fetch AI summary in parallel
+        fetchAiSummary(false);
+      } catch (err) {
+        hideProgress();
+        alert('Failed to load report: ' + err.message);
+      }
+    }
+
+    async function fetchAiSummary(force = false) {
+      const aiContainer = document.getElementById('aiContent');
+      const modelTag = document.getElementById('aiModelTag');
+      aiContainer.innerHTML = '<em>Generating AI executive risk analysis with Gemini...</em>';
+
+      try {
+        const res = await fetch(`/summarize/${currentAnalysisId}${force ? '?force=true' : ''}`, {
+          method: 'POST',
+        });
+        const data = await res.json();
+        modelTag.textContent = data.model;
+        aiContainer.innerHTML = marked.parse(data.summary);
+      } catch (err) {
+        aiContainer.innerHTML = `<span style="color: var(--sev-critical)">AI summary generation failed: ${err.message}</span>`;
+      }
+    }
+
+    function renderDashboard(report, summary) {
+      document.getElementById('dashboard').style.display = 'block';
+
+      // Meta
+      document.getElementById('metaPackage').textContent = report.manifest.package;
+      document.getElementById('metaVersion').textContent = `${report.manifest.versionName} (code ${report.manifest.versionCode})`;
+      document.getElementById('metaMinSdk').textContent = report.manifest.minSdk;
+      document.getElementById('metaTargetSdk').textContent = report.manifest.targetSdk;
+      document.getElementById('metaFileName').textContent = report.apk.fileName;
+      document.getElementById('metaSize').textContent = (report.apk.sizeBytes / 1024 / 1024).toFixed(2) + ' MB';
+
+      // Grade
+      const grade = summary.securityGrade;
+      const gradeBadge = document.getElementById('gradeBadge');
+      gradeBadge.className = `grade-circle grade-${grade}`;
+      document.getElementById('gradeLetter').textContent = grade;
+
+      // Counts
+      document.getElementById('cntCrit').textContent = summary.findingsCount.critical;
+      document.getElementById('cntHigh').textContent = summary.findingsCount.high;
+      document.getElementById('cntMed').textContent = summary.findingsCount.medium;
+      document.getElementById('cntLow').textContent = summary.findingsCount.low;
+
+      // Findings List
+      const findingsList = document.getElementById('findingsList');
+      findingsList.innerHTML = '';
+      document.getElementById('tabCountFindings').textContent = report.security.findings.length;
+
+      if (report.security.findings.length === 0) {
+        findingsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--grade-a);">🎉 Zero security findings identified! Application exhibits high compliance.</div>';
+      } else {
+        report.security.findings.forEach(f => {
+          const card = document.createElement('div');
+          card.className = 'finding-card';
+          card.innerHTML = `
+            <div class="finding-header">
+              <span class="finding-title">${escapeHtml(f.title)}</span>
+              <span class="severity-badge sev-${f.severity}-badge">${f.severity}</span>
+            </div>
+            <div class="finding-meta"><strong>ID:</strong> ${f.id} ${f.owaspCategory ? `· <strong>OWASP:</strong> ${f.owaspCategory}` : ''}</div>
+            <div class="finding-evidence"><strong>Evidence:</strong> ${escapeHtml(f.evidence)}</div>
+            <div class="finding-rec"><strong>Recommendation:</strong> ${escapeHtml(f.recommendation)}</div>
+          `;
+          findingsList.appendChild(card);
+        });
+      }
+
+      // Manifest Components
+      renderPills('manifestActivities', report.manifest.exportedComponents.activities);
+      renderPills('manifestServices', report.manifest.exportedComponents.services);
+      renderPills('manifestReceivers', report.manifest.exportedComponents.receivers);
+      renderPills('manifestProviders', report.manifest.exportedComponents.providers);
+      
+      const dangerousSet = new Set(report.manifest.dangerousPermissions);
+      const permPills = document.getElementById('manifestPermissions');
+      permPills.innerHTML = '';
+      report.manifest.permissions.forEach(p => {
+        const isDang = dangerousSet.has(p);
+        const span = document.createElement('span');
+        span.className = `pill ${isDang ? 'dangerous' : ''}`;
+        span.textContent = p.replace('android.permission.', '') + (isDang ? ' ⚠️' : '');
+        permPills.appendChild(span);
+      });
+
+      // Bytecode Insights
+      renderSecrets('codeSecretsList', report.codeInsights.possibleSecrets);
+      renderPills('codeDangerousApis', report.codeInsights.dangerousApiCalls, 'dangerous');
+      renderPills('codeTrackers', report.codeInsights.trackers);
+      renderPills('codeUrls', report.codeInsights.hardcodedUrls);
+
+      // Native
+      renderPills('nativeAbis', report.native.abis);
+      const libsList = document.getElementById('nativeLibsList');
+      libsList.innerHTML = '';
+      if (report.native.libs.length === 0) {
+        libsList.innerHTML = '<span style="color: var(--text-dim); font-size: 0.85rem;">No bundled native C/C++ shared objects (.so) detected.</span>';
+      } else {
+        report.native.libs.forEach(lib => {
+          const div = document.createElement('div');
+          div.style.padding = '0.4rem 0';
+          div.style.borderBottom = '1px solid var(--border-color)';
+          div.style.fontFamily = 'JetBrains Mono, monospace';
+          div.style.fontSize = '0.85rem';
+          div.innerHTML = `<span style="color: #38bdf8;">${escapeHtml(lib.name)}</span> <span style="color: var(--text-dim); font-size: 0.75rem;">(${lib.abi})</span>`;
+          libsList.appendChild(div);
+        });
+      }
+    }
+
+    function renderPills(containerId, list, extraClass = '') {
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+      if (!list || list.length === 0) {
+        el.innerHTML = '<span style="color: var(--text-dim); font-size: 0.8rem;">None detected</span>';
+        return;
+      }
+      list.forEach(item => {
+        const span = document.createElement('span');
+        span.className = `pill ${extraClass}`;
+        span.textContent = item;
+        el.appendChild(span);
+      });
+    }
+
+    function renderSecrets(containerId, secrets) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+      if (!secrets || secrets.length === 0) {
+        el.innerHTML = '<span style="color: var(--grade-a); font-size: 0.85rem;">✓ Zero exposed credentials or high-confidence secrets found in bytecode.</span>';
+        return;
+      }
+      secrets.forEach(s => {
+        const div = document.createElement('div');
+        div.style.padding = '0.5rem 0.75rem';
+        div.style.background = 'rgba(239, 68, 68, 0.1)';
+        div.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        div.style.borderRadius = '8px';
+        div.style.marginBottom = '0.5rem';
+        div.style.fontSize = '0.85rem';
+        div.innerHTML = `<strong>${escapeHtml(s.pattern)}</strong> <span style="color: var(--text-dim);">(${s.location})</span>: <code style="color: #fca5a5;">${escapeHtml(s.evidence)}</code>`;
+        el.appendChild(div);
+      });
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function showProgress(title, step) {
+      document.getElementById('progressTitle').textContent = title;
+      document.getElementById('progressStep').textContent = step;
+      document.getElementById('progressBox').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('dropZone').style.opacity = '0.5';
+    }
+
+    function hideProgress() {
+      document.getElementById('progressBox').style.display = 'none';
+      document.getElementById('dropZone').style.opacity = '1';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

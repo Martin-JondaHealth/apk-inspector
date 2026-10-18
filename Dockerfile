@@ -34,9 +34,10 @@ RUN pip install --no-cache-dir -r engine/requirements.txt
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Copy built application and engine scripts
+# Copy built application, engine scripts, and web UI
 COPY --from=builder /app/dist ./dist
 COPY engine/ ./engine/
+COPY public/ ./public/
 
 # Create working directories
 RUN mkdir -p uploads reports \
