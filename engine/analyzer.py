@@ -521,11 +521,15 @@ class ApkAnalyzer:
                         try:
                             dvm = DalvikVMFormat(dex_bytes)
                             for s in dvm.get_strings():
-                                dex_strings.add(s)
+                                if isinstance(s, bytes):
+                                    s = s.decode("utf-8", errors="ignore")
+                                dex_strings.add(str(s))
                             for m in dvm.get_methods():
-                                dex_methods.add(f"{m.get_class_name()}->{m.get_name()}")
+                                c_name = str(m.get_class_name())
+                                m_name = str(m.get_name())
+                                dex_methods.add(f"{c_name}->{m_name}")
                             for c in dvm.get_classes():
-                                dex_classes.add(c.get_name())
+                                dex_classes.add(str(c.get_name()))
                             continue
                         except Exception:
                             pass

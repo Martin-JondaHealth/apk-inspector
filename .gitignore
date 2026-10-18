@@ -31,5 +31,8 @@ reports/*
 *.swp
 *.swo
 
-# Sample test APK generated at runtime
+# Sample test APKs
 sample-test.apk
+sample_apks/
+*.apk
+
