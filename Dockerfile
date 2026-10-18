@@ -4,10 +4,8 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 COPY package*.json tsconfig*.json nest-cli.json ./
-RUN npm ci
-
 COPY prisma/ ./prisma/
-RUN npx prisma generate
+RUN npm ci
 
 COPY src/ ./src/
 RUN npm run build
@@ -35,9 +33,8 @@ RUN pip install --no-cache-dir -r engine/requirements.txt
 
 # Install production Node dependencies and generate Prisma client
 COPY package*.json ./
-RUN npm ci --only=production
 COPY prisma/ ./prisma/
-RUN npx prisma generate
+RUN npm ci --omit=dev
 
 # Copy built application, engine scripts, and web UI
 COPY --from=builder /app/dist ./dist
