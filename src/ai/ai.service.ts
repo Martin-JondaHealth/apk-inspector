@@ -13,11 +13,18 @@ export class AiService {
     const openAiKey = this.configService.get<string>('OPENAI_API_KEY');
 
     if (geminiKey) {
+      const preferredModel = this.configService.get<string>('GEMINI_MODEL') || 'gemini-2.5-flash';
       try {
-        const summary = await this.callGemini(report, geminiKey);
-        return { summary, model: 'gemini-1.5-flash' };
+        const summary = await this.callGemini(report, geminiKey, preferredModel);
+        return { summary, model: preferredModel };
       } catch (err) {
-        this.logger.warn(`Gemini API call failed, falling back to local analysis engine: ${err.message}`);
+        this.logger.warn(`Gemini API call with ${preferredModel} failed: ${err.message}. Retrying with gemini-flash-latest...`);
+        try {
+          const summary = await this.callGemini(report, geminiKey, 'gemini-flash-latest');
+          return { summary, model: 'gemini-flash-latest' };
+        } catch (retryErr) {
+          this.logger.warn(`Gemini API retry failed, falling back to local analysis engine: ${retryErr.message}`);
+        }
       }
     } else if (openAiKey) {
       try {
@@ -33,9 +40,9 @@ export class AiService {
     return { summary: localSummary, model: 'rule-based-security-heuristics' };
   }
 
-  private async callGemini(report: ApkReportDto, apiKey: string): Promise<string> {
+  private async callGemini(report: ApkReportDto, apiKey: string, model: string = 'gemini-2.5-flash'): Promise<string> {
     const prompt = this.buildPrompt(report);
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -47,7 +54,8 @@ export class AiService {
     });
 
     if (!res.ok) {
-      throw new Error(`Gemini API responded with status ${res.status}`);
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Gemini API responded with status ${res.status}: ${errText}`);
     }
 
     const data = await res.json();
