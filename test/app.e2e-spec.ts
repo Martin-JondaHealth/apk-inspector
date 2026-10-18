@@ -10,6 +10,8 @@ describe('APK Inspector (e2e)', () => {
   let analysisId: string;
   const sampleApkPath = path.join(__dirname, '..', 'sample-test.apk');
 
+  jest.setTimeout(60000);
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -18,13 +20,13 @@ describe('APK Inspector (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
-  });
+  }, 30000);
 
   afterAll(async () => {
     if (app) {
       await app.close();
     }
-  });
+  }, 30000);
 
   it('GET /health - should return healthy system status', async () => {
     const res = await request(app.getHttpServer()).get('/health').expect(200);
@@ -112,7 +114,7 @@ describe('APK Inspector (e2e)', () => {
     expect(res.body.summary).toBeDefined();
     expect(res.body.summary.length).toBeGreaterThan(50);
     expect(res.body.model).toBeDefined();
-  }, 20000);
+  }, 45000);
 
   it('GET /reports - should list recent analyses', async () => {
     const res = await request(app.getHttpServer())

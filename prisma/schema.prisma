@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AnalysisReport {
+  id            String   @id @default(uuid())
+  fileName      String
+  sizeBytes     Int
+  sha256        String
+  packageName   String
+  versionName   String
+  versionCode   Int
+  minSdk        Int
+  targetSdk     Int
+  securityGrade String
+  findingsCount Json
+  reportJson    Json
+  aiSummary     String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([packageName])
+  @@index([sha256])
+  @@index([createdAt])
+  @@map("analysis_reports")
+}

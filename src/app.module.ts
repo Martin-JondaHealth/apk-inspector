@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './health/health.module';
 import { AnalyzerModule } from './analyzer/analyzer.module';
 import { AiModule } from './ai/ai.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AiModule } from './ai/ai.module';
         limit: 100,
       },
     ]),
+    PrismaModule,
     HealthModule,
     AnalyzerModule,
     AiModule,

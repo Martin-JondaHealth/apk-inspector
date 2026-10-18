@@ -4,9 +4,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
+import { PrismaService } from '../prisma/prisma.service';
+
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
+  constructor(private readonly prisma: PrismaService) {}
+
   @Get()
   @ApiOperation({ summary: 'Liveness & system health check' })
   @ApiResponse({ status: 200, description: 'Service health status' })
@@ -40,6 +44,7 @@ export class HealthController {
         pythonExecutable: pythonExe,
         engineReady,
         androguardReady,
+        databaseConnected: this.prisma.isConnected,
       },
     };
   }

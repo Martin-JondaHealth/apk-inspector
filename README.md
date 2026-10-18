@@ -213,14 +213,71 @@ curl -X POST http://localhost:3000/summarize/<analysisId>
 
 ---
 
+---
+
+## 🗄️ Database Setup (Local Docker & Neon.tech)
+
+APK Inspector uses **Prisma ORM** with **PostgreSQL**. It supports a resilient dual-mode architecture: if a PostgreSQL database is connected, reports are indexed and persisted in PostgreSQL; if no database is configured, it automatically falls back to local disk storage (`reports/`).
+
+### Local Development (Docker Compose)
+1. Start the PostgreSQL container:
+   ```bash
+   docker compose up -d postgres
+   ```
+   *(Runs PostgreSQL 16 on port `5435` with volume persistence)*.
+
+2. Set the connection string in your `.env`:
+   ```env
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5435/apk_inspector?schema=public"
+   ```
+
+3. Push the schema to your local database:
+   ```bash
+   npx prisma db push
+   ```
+
+### Production Deployment (Neon.tech & Render)
+1. **Create a Free Database on Neon:**
+   - Sign up or log into [Neon.tech](https://neon.tech).
+   - Create a new project (e.g. `apk-inspector-db`).
+   - Copy the connection string provided in your Neon dashboard (looks like `postgresql://<user>:<password>@<neon-host>/<dbname>?sslmode=require`).
+
+2. **Push the Schema to Neon:**
+   From your local terminal, apply the Prisma schema to your remote Neon database:
+   ```bash
+   DATABASE_URL="postgresql://<user>:<password>@<neon-host>/<dbname>?sslmode=require" npx prisma db push
+   ```
+
+3. **Configure Environment Variables in Render:**
+   - Open your service in [dashboard.render.com](https://dashboard.render.com).
+   - Navigate to the **Environment** tab on the left sidebar.
+   - Click **Add Environment Variable** (or **Add from .env**) and set:
+     - `DATABASE_URL`: Your Neon connection string (`postgresql://...sslmode=require`)
+     - `GEMINI_API_KEY`: Your Gemini API key
+     - `GEMINI_MODEL`: `gemini-2.5-flash`
+     - `GEMINI_MAX_TOKENS`: `8192`
+     - `GEMINI_THINKING_BUDGET`: `0`
+     - `PORT`: `3000`
+     - `NODE_ENV`: `production`
+   - Click **Save Changes**. Render will automatically trigger a zero-downtime redeployment.
+
+---
+
 ## 🐳 Docker Deployment
 
+To run the entire stack locally with Docker Compose:
+
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
+
+This starts:
+- `apk-inspector`: NestJS + Python engine on port `3001`
+- `postgres`: PostgreSQL 16 on port `5435`
 
 ---
 
 ## 📄 Resume Integration Guide
 
 For detailed explanations of the underlying Android internals, Dalvik bytecode, native C/C++ concepts, and interview talking points, refer to [RESUME_GUIDE.md](RESUME_GUIDE.md).
+

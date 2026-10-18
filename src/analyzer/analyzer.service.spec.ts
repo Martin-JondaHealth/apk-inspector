@@ -4,6 +4,8 @@ import { AnalyzerService } from './analyzer.service';
 import { AiService } from '../ai/ai.service';
 import { ApkReportDto } from './dto/report.dto';
 
+import { PrismaService } from '../prisma/prisma.service';
+
 describe('AnalyzerService', () => {
   let service: AnalyzerService;
   let aiService: AiService;
@@ -76,6 +78,18 @@ describe('AnalyzerService', () => {
               summary: 'Mock executive summary',
               model: 'test-model',
             }),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            isConnected: false,
+            analysisReport: {
+              findMany: jest.fn().mockResolvedValue([]),
+              findUnique: jest.fn().mockResolvedValue(null),
+              upsert: jest.fn().mockResolvedValue({}),
+              update: jest.fn().mockResolvedValue({}),
+            },
           },
         },
       ],

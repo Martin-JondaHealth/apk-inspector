@@ -15,6 +15,8 @@ import { ReportSummaryDto } from './dto/summary.dto';
 import { AnalyzeResponseDto, AiSummaryResponseDto } from './dto/analyze-response.dto';
 import { AiService } from '../ai/ai.service';
 
+import { PrismaService } from '../prisma/prisma.service';
+
 const execFileAsync = promisify(execFile);
 
 @Injectable()
@@ -26,7 +28,10 @@ export class AnalyzerService {
   private readonly reportsDir = path.join(this.baseDir, 'reports');
   private readonly engineScript = path.join(this.baseDir, 'engine', 'analyzer.py');
 
-  constructor(private readonly aiService: AiService) {
+  constructor(
+    private readonly aiService: AiService,
+    private readonly prisma: PrismaService,
+  ) {
     fs.mkdirSync(this.uploadsDir, { recursive: true });
     fs.mkdirSync(this.reportsDir, { recursive: true });
     this.loadPersistedReports();
@@ -40,7 +45,7 @@ export class AnalyzerService {
     return 'python3';
   }
 
-  private loadPersistedReports(): void {
+  private async loadPersistedReports(): Promise<void> {
     try {
       const files = fs.readdirSync(this.reportsDir);
       for (const file of files) {
@@ -55,6 +60,26 @@ export class AnalyzerService {
       this.logger.log(`Loaded ${this.reportsCache.size} cached security reports from disk.`);
     } catch (err) {
       this.logger.warn(`Could not load existing reports from disk: ${err.message}`);
+    }
+
+    // Also populate from PostgreSQL if connected
+    if (this.prisma.isConnected) {
+      try {
+        const records = await this.prisma.analysisReport.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        });
+        for (const record of records) {
+          const rep = record.reportJson as unknown as ApkReportDto;
+          if (rep && rep.analysisId) {
+            if (record.aiSummary) rep.aiSummary = record.aiSummary;
+            this.reportsCache.set(rep.analysisId, rep);
+          }
+        }
+        this.logger.log(`Loaded ${records.length} reports from PostgreSQL database.`);
+      } catch (err) {
+        this.logger.warn(`Could not load reports from database: ${err.message}`);
+      }
     }
   }
 
@@ -78,9 +103,39 @@ export class AnalyzerService {
       const report = await this.runStaticAnalysis(uploadFilePath, analysisId);
       this.reportsCache.set(analysisId, report);
 
-      // Persist report JSON
+      // Persist report JSON to local disk
       const reportFilePath = path.join(this.reportsDir, `${analysisId}.json`);
       fs.writeFileSync(reportFilePath, JSON.stringify(report, null, 2), 'utf-8');
+
+      // Persist to PostgreSQL if database connection is available
+      if (this.prisma.isConnected) {
+        try {
+          const summary = this.getSummary(analysisId);
+          await this.prisma.analysisReport.upsert({
+            where: { id: analysisId },
+            create: {
+              id: analysisId,
+              fileName: report.apk.fileName,
+              sizeBytes: report.apk.sizeBytes,
+              sha256: report.apk.sha256,
+              packageName: report.manifest.package,
+              versionName: report.manifest.versionName,
+              versionCode: report.manifest.versionCode,
+              minSdk: report.manifest.minSdk,
+              targetSdk: report.manifest.targetSdk,
+              securityGrade: summary.securityGrade,
+              findingsCount: summary.findingsCount as any,
+              reportJson: report as any,
+            },
+            update: {
+              reportJson: report as any,
+            },
+          });
+          this.logger.log(`Persisted report ${analysisId} to PostgreSQL database.`);
+        } catch (dbErr) {
+          this.logger.warn(`Could not persist report to PostgreSQL: ${dbErr.message}`);
+        }
+      }
 
       return {
         analysisId,
@@ -193,9 +248,22 @@ export class AnalyzerService {
     report.aiSummary = summary;
     this.reportsCache.set(analysisId, report);
 
-    // Update persisted JSON
+    // Update persisted JSON on disk
     const reportFilePath = path.join(this.reportsDir, `${analysisId}.json`);
     fs.writeFileSync(reportFilePath, JSON.stringify(report, null, 2), 'utf-8');
+
+    // Update in PostgreSQL if connected
+    if (this.prisma.isConnected) {
+      try {
+        await this.prisma.analysisReport.update({
+          where: { id: analysisId },
+          data: { aiSummary: summary },
+        });
+        this.logger.log(`Updated AI summary for ${analysisId} in PostgreSQL.`);
+      } catch (dbErr) {
+        this.logger.warn(`Could not update AI summary in PostgreSQL: ${dbErr.message}`);
+      }
+    }
 
     return {
       analysisId,

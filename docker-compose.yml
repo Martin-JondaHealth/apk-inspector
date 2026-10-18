@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: apk-inspector-postgres
+    ports:
+      - '5435:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: apk_inspector
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   apk-inspector:
     build:
       context: .
@@ -11,8 +29,14 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/apk_inspector?schema=public
+      - GEMINI_MODEL=gemini-2.5-flash
+      - GEMINI_MAX_TOKENS=8192
+      - GEMINI_THINKING_BUDGET=0
       # - GEMINI_API_KEY=your_gemini_api_key_here
-      # - OPENAI_API_KEY=your_openai_api_key_here
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - ./reports:/app/reports
     restart: unless-stopped
@@ -21,3 +45,6 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+volumes:
+  postgres_data:
