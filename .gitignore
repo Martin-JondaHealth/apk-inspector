@@ -36,3 +36,8 @@ sample-test.apk
 sample_apks/
 *.apk
 
+# Local private documentation and resume guides
+RESUME_GUIDE.md
+Resume.md
+*resume*.md
+*Resume*.md

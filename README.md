@@ -282,11 +282,3 @@ This starts:
 ## 📜 Changelog
 
 Detailed release notes and version history are maintained in [CHANGELOG.md](CHANGELOG.md).
-
----
-
-## 📄 Resume Integration Guide
-
-For detailed explanations of the underlying Android internals, Dalvik bytecode, native C/C++ concepts, and interview talking points, refer to [RESUME_GUIDE.md](RESUME_GUIDE.md).
-
-
