@@ -177,10 +177,11 @@ export class AnalyzerService {
     };
   }
 
-  async getAiSummary(analysisId: string): Promise<AiSummaryResponseDto> {
+  async getAiSummary(analysisId: string, force: boolean = false): Promise<AiSummaryResponseDto> {
     const report = this.getReport(analysisId);
 
-    if (report.aiSummary) {
+    // Only return cached summary if not forcing and summary is not truncated (< 200 chars)
+    if (report.aiSummary && !force && report.aiSummary.length > 200) {
       return {
         analysisId,
         summary: report.aiSummary,

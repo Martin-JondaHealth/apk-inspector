@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Param,
+  Query,
   UseInterceptors,
   UploadedFile,
   HttpCode,
@@ -17,6 +18,7 @@ import {
   ApiConsumes,
   ApiBody,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AnalyzerService } from './analyzer.service';
 import { ApkReportDto } from './dto/report.dto';
@@ -105,17 +107,28 @@ export class AnalyzerController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Generate AI plain-English executive risk summary',
-    description: 'Invokes AI / rule-based heuristics to produce an executive risk report and prioritized remediation plan.',
+    description:
+      'Invokes AI / rule-based heuristics to produce an executive risk report and prioritized remediation plan. Use ?force=true to regenerate.',
   })
   @ApiParam({ name: 'id', description: 'Analysis UUID' })
+  @ApiQuery({
+    name: 'force',
+    required: false,
+    type: Boolean,
+    description: 'Force re-generation with the LLM instead of serving cached summary',
+  })
   @ApiResponse({
     status: 200,
     description: 'AI-generated executive risk assessment',
     type: AiSummaryResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Report not found' })
-  async summarize(@Param('id', ParseUUIDPipe) id: string): Promise<AiSummaryResponseDto> {
-    return this.analyzerService.getAiSummary(id);
+  async summarize(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('force') force?: string,
+  ): Promise<AiSummaryResponseDto> {
+    const isForce = force === 'true' || force === '1';
+    return this.analyzerService.getAiSummary(id, isForce);
   }
 
   @Get('reports')

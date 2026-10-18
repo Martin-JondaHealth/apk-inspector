@@ -42,6 +42,20 @@ export class AiService {
 
   private async callGemini(report: ApkReportDto, apiKey: string, model: string = 'gemini-2.5-flash'): Promise<string> {
     const prompt = this.buildPrompt(report);
+    const maxTokens = parseInt(this.configService.get<string>('GEMINI_MAX_TOKENS') || '8192', 10);
+    const thinkingBudgetStr = this.configService.get<string>('GEMINI_THINKING_BUDGET');
+    const thinkingBudget = thinkingBudgetStr !== undefined ? parseInt(thinkingBudgetStr, 10) : 0;
+
+    const generationConfig: Record<string, any> = {
+      temperature: 0.2,
+      maxOutputTokens: maxTokens,
+    };
+
+    // Budget 0 ensures thinking tokens do not preemptively consume the output token allowance
+    if (!isNaN(thinkingBudget)) {
+      generationConfig.thinkingConfig = { thinkingBudget };
+    }
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const res = await fetch(url, {
@@ -49,7 +63,7 @@ export class AiService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+        generationConfig,
       }),
     });
 
