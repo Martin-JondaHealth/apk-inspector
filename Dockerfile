@@ -36,14 +36,19 @@ COPY package*.json ./
 COPY prisma/ ./prisma/
 RUN npm ci --omit=dev
 
-# Copy built application, engine scripts, and web UI
+# Copy built application, engine scripts, web UI, and sample APKs
 COPY --from=builder /app/dist ./dist
 COPY engine/ ./engine/
 COPY public/ ./public/
+COPY sample_apks/ ./sample_apks/
+
+# Ensure sample-test.apk is generated in public/ and sample_apks/
+RUN python engine/create_test_apk.py public/sample-test.apk \
+    && python engine/create_test_apk.py sample_apks/sample-test.apk
 
 # Create working directories
-RUN mkdir -p uploads reports \
-    && chmod -R 777 uploads reports
+RUN mkdir -p uploads reports sample_apks \
+    && chmod -R 777 uploads reports sample_apks public
 
 ENV PORT=3000
 ENV NODE_ENV=production

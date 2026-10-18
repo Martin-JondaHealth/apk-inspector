@@ -9,7 +9,9 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
@@ -144,4 +146,25 @@ export class AnalyzerController {
   listReports(): ReportSummaryDto[] {
     return this.analyzerService.listReports();
   }
+
+  @Get('sample-test.apk')
+  @ApiOperation({
+    summary: 'Download the benign sample test APK',
+    description: 'Serves or generates the minimal benign Android APK binary for testing.',
+  })
+  async getSampleTestApk(@Res() res: Response) {
+    const apkPath = await this.analyzerService.ensureSampleApk('sample-test.apk');
+    return res.sendFile(apkPath);
+  }
+
+  @Get('sample_apks/:filename')
+  @ApiOperation({
+    summary: 'Download a pre-configured sample APK binary',
+    description: 'Serves or fetches pre-configured sample APK binaries (e.g. InsecureBankv2.apk, NewPipe.apk).',
+  })
+  async getSampleApk(@Param('filename') filename: string, @Res() res: Response) {
+    const apkPath = await this.analyzerService.ensureSampleApk(filename);
+    return res.sendFile(apkPath);
+  }
 }
+

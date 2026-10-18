@@ -279,4 +279,62 @@ export class AnalyzerService {
     }
     return summaries;
   }
+
+  async ensureSampleApk(filename: string): Promise<string> {
+    const cleanName = path.basename(filename);
+    const sampleDir = path.join(process.cwd(), 'sample_apks');
+    const publicDir = path.join(process.cwd(), 'public');
+
+    const samplePath = path.join(sampleDir, cleanName);
+    const publicPath = path.join(publicDir, cleanName);
+
+    if (fs.existsSync(samplePath)) {
+      return samplePath;
+    }
+    if (fs.existsSync(publicPath)) {
+      return publicPath;
+    }
+
+    if (!fs.existsSync(sampleDir)) {
+      fs.mkdirSync(sampleDir, { recursive: true });
+    }
+
+    if (cleanName === 'sample-test.apk') {
+      const scriptPath = path.join(process.cwd(), 'engine', 'create_test_apk.py');
+      const pythonExec = this.getPythonExecutable();
+      try {
+        await execFileAsync(pythonExec, [scriptPath, samplePath]);
+        return samplePath;
+      } catch (err) {
+        this.logger.error(`Failed to generate sample-test.apk: ${err.message}`);
+      }
+    }
+
+    const remoteUrls: Record<string, string> = {
+      'InsecureBankv2.apk': 'https://github.com/dineshshetty/Android-InsecureBankv2/raw/master/InsecureBankv2.apk',
+      'NewPipe.apk': 'https://github.com/TeamNewPipe/NewPipe/releases/download/v0.27.2/NewPipe_v0.27.2.apk',
+      'AnkiDroid.apk': 'https://github.com/ankidroid/Anki-Android/releases/download/v2.18.4/AnkiDroid-2.18.4.parallel.A.apk',
+      'Mihon.apk': 'https://github.com/mihonapp/mihon/releases/download/v0.17.1/mihon-arm64-v8a-v0.17.1.apk',
+      'Unciv.apk': 'https://github.com/yairm210/Unciv/releases/download/4.15.14/Unciv.apk',
+    };
+
+    const downloadUrl = remoteUrls[cleanName];
+    if (downloadUrl) {
+      try {
+        this.logger.log(`Downloading sample APK ${cleanName} from ${downloadUrl}...`);
+        const res = await fetch(downloadUrl);
+        if (res.ok) {
+          const buffer = Buffer.from(await res.arrayBuffer());
+          fs.writeFileSync(samplePath, buffer);
+          this.logger.log(`Successfully cached sample APK ${cleanName} (${buffer.length} bytes)`);
+          return samplePath;
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to auto-download sample APK ${cleanName}: ${err.message}`);
+      }
+    }
+
+    throw new NotFoundException(`Sample APK file '${cleanName}' not found on server.`);
+  }
 }
+

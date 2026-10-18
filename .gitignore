@@ -32,9 +32,11 @@ reports/*
 *.swo
 
 # Sample test APKs
-sample-test.apk
-sample_apks/
 *.apk
+!public/sample-test.apk
+!sample_apks/sample-test.apk
+!sample_apks/InsecureBankv2.apk
+!sample_apks/NewPipe.apk
 
 # Local private documentation and resume guides
 RESUME_GUIDE.md
